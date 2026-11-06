@@ -9,6 +9,15 @@ Devcontainer con [llama.cpp](https://github.com/ggml-org/llama.cpp) (compilado c
 
 Usuario del contenedor: `oceanos`.
 
+---
+
+## Recursos utilizados
+
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** - Implementación en C para ejecutar modelos LLM de forma eficiente
+- **[pi](https://pi.dev)** - Asistente de codificación y razonamiento con IA local
+- **[Gemma 4 12B](https://huggingface.co/google/gemma-4-12b-it)** - Modelo de lenguaje de Google
+- **[Qwen3.5 9B](https://huggingface.co/Qwen/Qwen3.5-9B)** - Modelo de lenguaje de Alibaba Cloud
+
 ## Requisitos
 
 - GPU NVIDIA (probado: RTX 5070 Ti 16 GB) con driver reciente.
@@ -30,6 +39,15 @@ Usuario del contenedor: `oceanos`.
    Arranca con `qwen3.5-9b` seleccionado. Escribir el prompt y `Enter`.
 
 ### Cambiar de modelo en pi
+
+---
+
+## Recursos utilizados
+
+- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** - Implementación en C para ejecutar modelos LLM de forma eficiente
+- **[pi](https://pi.dev)** - Asistente de codificación y razonamiento con IA local
+- **[Gemma 4 12B](https://huggingface.co/google/gemma-4-12b-it)** - Modelo de lenguaje de Google
+- **[Qwen3.5 9B](https://huggingface.co/Qwen/Qwen3.5-9B)** - Modelo de lenguaje de Alibaba Cloud
 
 | Acción | Cómo |
 |---|---|
