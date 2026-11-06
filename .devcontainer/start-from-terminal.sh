@@ -1,0 +1,89 @@
+#!/bin/bash
+# Script para arrancar el devcontainer desde terminal (sin VS Code)
+
+set -e
+
+CONTAINER_NAME="llm-setup-dev"
+VOLUME_NAME="llm-models"
+
+echo "🐳 LLM-Setup DevContainer"
+echo "========================"
+echo ""
+
+# Verificar si Docker está disponible
+if ! command -v docker &> /dev/null; then
+    echo "❌ Error: Docker no está instalado o no está en PATH"
+    exit 1
+fi
+
+# Verificar si el volumen existe
+if docker volume ls | grep -q "$VOLUME_NAME"; then
+    echo "✅ Volumen '$VOLUME_NAME' ya existe (~13 GB de modelos)"
+else
+    echo "⚠️  Creando volumen para modelos..."
+    docker volume create $VOLUME_NAME
+fi
+
+# Construir la imagen si no existe
+IMAGE_NAME="llm-setup-dev"
+echo "🔨 Verificando imagen Docker..."
+if ! docker images | grep -q "$IMAGE_NAME"; then
+    echo "📦 Construyendo imagen Docker..."
+    docker build -t "$IMAGE_NAME" .
+    echo "✅ Imagen construida"
+else
+    echo "✅ Imagen ya existe"
+fi
+
+# Verificar si el contenedor está corriendo
+if docker ps --format '{{.Names}}' | grep -q "^$CONTAINER_NAME$"; then
+    echo "✅ Contenedor ya está corriendo"
+    docker logs -f "$CONTAINER_NAME"
+    exit 0
+fi
+
+# Verificar si el contenedor existe (podría estar detenido)
+if docker ps -a --format '{{.Names}}' | grep -q "^$CONTAINER_NAME$"; then
+    echo "⚠️  Contenedor existe pero no está corriendo. Reiniciando..."
+    docker rm $CONTAINER_NAME 2>/dev/null || true
+fi
+
+# Arrancar el contenedor
+echo ""
+echo "🚀 Arrancando contenedor..."
+docker run -d \
+    --name "$CONTAINER_NAME" \
+    --gpus all \
+    -v "$VOLUME_NAME":/models \
+    -p 9931:9931 \
+    -e HF_TOKEN="${HF_TOKEN:-}" \
+    "$IMAGE_NAME"
+
+echo ""
+echo "✅ Contenedor arrancado!"
+echo ""
+echo "📊 Estado del contenedor:"
+docker ps
+
+echo ""
+echo "📋 Acciones disponibles:"
+echo "   - Ver logs: docker logs -f $CONTAINER_NAME"
+echo "   - Detener: docker stop $CONTAINER_NAME"
+echo "   - Reiniciar: docker restart $CONTAINER_NAME"
+echo "   - Eliminar: docker rm $CONTAINER_NAME"
+echo ""
+echo "🔗 Acceder a la API:"
+echo "   - curl localhost:9931/models"
+echo "   - curl localhost:9931/v1/chat/completions (requiere autenticación)"
+echo ""
+echo "📝 Acceder a pi (desde dentro del contenedor):"
+echo "   docker exec -it $CONTAINER_NAME bash"
+echo "   Dentro: pi"
+echo ""
+echo "🎯 Modelos disponibles:"
+echo "   - Gemma 4 12B it Q4_K_M"
+echo "   - Qwen3.5 9B Q4_K_M"
+echo ""
+echo "💡 Para usar pi, abre una nueva terminal y ejecuta:"
+echo "   docker exec -it $CONTAINER_NAME pi"
+echo ""

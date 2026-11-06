@@ -42,13 +42,6 @@ Usuario del contenedor: `oceanos`.
 
 ---
 
-## Recursos utilizados
-
-- **[llama.cpp](https://github.com/ggml-org/llama.cpp)** - Implementación en C para ejecutar modelos LLM de forma eficiente
-- **[pi](https://pi.dev)** - Asistente de codificación y razonamiento con IA local
-- **[Gemma 4 12B](https://huggingface.co/google/gemma-4-12b-it)** - Modelo de lenguaje de Google
-- **[Qwen3.5 9B](https://huggingface.co/Qwen/Qwen3.5-9B)** - Modelo de lenguaje de Alibaba Cloud
-
 | Acción | Cómo |
 |---|---|
 | Elegir modelo de una lista | `/model` (o `Ctrl+L`) → elegir `gemma-4-12b` / `qwen3.5-9b` |
@@ -60,6 +53,91 @@ Usuario del contenedor: `oceanos`.
 Solo un modelo cabe en VRAM a la vez: al cambiar, el primer mensaje tarda unos segundos mientras el router descarga uno y carga el otro.
 
 Arrancar pi directamente con un modelo: `pi --model llama-cpp/gemma-4-12b`.
+
+---
+
+## 🐳 Uso desde Terminal (sin VS Code)
+
+Si prefieres no usar VS Code, puedes arrancar el contenedor directamente desde una terminal de Ubuntu:
+
+### 1️⃣ Arrancar el contenedor
+
+```bash
+cd /ruta/al/repo
+chmod +x .devcontainer/start-from-terminal.sh
+./devcontainer/start-from-terminal.sh
+```
+
+Esto hará:
+- ✅ Verificar Docker y GPU
+- ✅ Crear el volumen para modelos (si no existe)
+- ✅ Construir la imagen Docker (primera vez, ~10-20 min)
+- ✅ Descargar los modelos (~13 GB al volumen `llm-models`)
+- ✅ Arrancar el contenedor con `llama-server` corriendo
+
+### 2️⃣ Acceder a pi
+
+```bash
+docker exec -it llm-setup-dev bash
+pi
+```
+
+O directamente:
+```bash
+docker exec -it llm-setup-dev pi
+```
+
+### 3️⃣ Ver estado y logs
+
+```bash
+docker ps                    # Ver contenedor corriendo
+docker logs -f llm-setup-dev # Ver logs del servidor
+docker exec llm-setup-dev pi # Acceder a pi
+```
+
+### 4️⃣ Detener cuando termines
+
+```bash
+cd /ruta/al/repo
+chmod +x .devcontainer/stop-container.sh
+./devcontainer/stop-container.sh
+```
+
+### 5️⃣ Accesos directos Docker
+
+| Acción | Comando |
+|--------|---------|
+| Arrancar | `./devcontainer/start-from-terminal.sh` |
+| Ver logs | `docker logs -f llm-setup-dev` |
+| Acceder a pi | `docker exec -it llm-setup-dev pi` |
+| Detener | `./devcontainer/stop-container.sh` |
+
+---
+
+## 🔧 Configuración
+
+| Qué | Dónde |
+|---|---|
+| Versión llama.cpp / arquitectura CUDA | `build.args` en `.devcontainer/devcontainer.json` |
+| Contexto y capas GPU por modelo | `.devcontainer/models.ini` |
+| Modelos de pi | `.devcontainer/pi-models.json` → `~/.pi/agent/models.json` |
+| Modelo inicial de pi | `.devcontainer/pi-settings.json` → `~/.pi/agent/settings.json` |
+| Lista de descargas | `.devcontainer/download-models.sh` |
+
+`HF_TOKEN` del host se pasa al contenedor si existe (solo necesario para repos con acceso restringido).
+
+---
+
+## 📊 Recursos aproximados
+
+| Recurso | Uso típico |
+|---------|------------|
+| RAM | ~2.0 GB (solo modelo cargado) |
+| VRAM | ~6-7 GB (dependiendo del modelo) |
+| Disco | ~13 GB (modelos en volumen persistente) |
+| CPU | ~10-15% durante inferencia |
+
+*Valores aproximados para RTX 5070 Ti 16 GB*
 
 ### Comprobar el servidor
 
