@@ -1,2 +1,71 @@
 # llm-setup
-Configuracion liviana local sobre devcontainer llama.cpp + opencode
+
+Devcontainer con [llama.cpp](https://github.com/ggml-org/llama.cpp) (compilado con CUDA para Blackwell / RTX 50xx) + [pi](https://pi.dev) y dos modelos locales:
+
+| Modelo | Fichero | Tamaño |
+|---|---|---|
+| Gemma 4 12B it Q4_K_M | `unsloth/gemma-4-12b-it-GGUF` / `gemma-4-12b-it-Q4_K_M.gguf` | ~7.1 GB |
+| Qwen3.5 9B Q4_K_M | `unsloth/Qwen3.5-9B-GGUF` / `Qwen3.5-9B-Q4_K_M.gguf` | ~5.7 GB |
+
+Usuario del contenedor: `oceanos`.
+
+## Requisitos
+
+- GPU NVIDIA (probado: RTX 5070 Ti 16 GB) con driver reciente.
+- Docker con soporte GPU (Docker Desktop + WSL2, o Docker Engine + `nvidia-container-toolkit`).
+- VS Code + extensión Dev Containers (o `devcontainer` CLI).
+
+## Uso
+
+1. Abrir el repo en VS Code → `F1` → **Dev Containers: Reopen in Container**.
+   - Primera vez: compila llama.cpp (~10-20 min) y descarga modelos (~13 GB) al volumen `llm-models`.
+2. `llama-server` se levanta solo como proceso principal del contenedor (router, puerto `9931`, log `/tmp/llama-server.log`).
+   Tras cambiar algo en `.devcontainer/`: `F1` → **Dev Containers: Rebuild Container**.
+3. Abrir una terminal en VS Code (`` Ctrl+` ``) y ejecutar:
+
+   ```bash
+   pi
+   ```
+
+   Arranca con `qwen3.5-9b` seleccionado. Escribir el prompt y `Enter`.
+
+### Cambiar de modelo en pi
+
+| Acción | Cómo |
+|---|---|
+| Elegir modelo de una lista | `/model` (o `Ctrl+L`) → elegir `gemma-4-12b` / `qwen3.5-9b` |
+| Alternar entre los dos | `Ctrl+P` |
+| Guardar el elegido como inicial | `Ctrl+S` dentro de `/model` |
+| Nivel de razonamiento (thinking) | `Shift+Tab` |
+| Salir | `Ctrl+C` dos veces |
+
+Solo un modelo cabe en VRAM a la vez: al cambiar, el primer mensaje tarda unos segundos mientras el router descarga uno y carga el otro.
+
+Arrancar pi directamente con un modelo: `pi --model llama-cpp/gemma-4-12b`.
+
+### Comprobar el servidor
+
+Si pi muestra `Connection error`, el servidor no está corriendo. Relanzarlo a mano:
+
+```bash
+nohup llama-server --models-preset /etc/llama/models.ini --models-max 1 --host 0.0.0.0 --port 9931 > /tmp/llama-server.log 2>&1 &
+```
+
+```bash
+tail -f /tmp/llama-server.log
+curl localhost:9931/models
+curl localhost:9931/v1/chat/completions -H 'Content-Type: application/json' \
+  -d '{"model":"qwen3.5-9b","messages":[{"role":"user","content":"hola"}]}'
+```
+
+## Configuración
+
+| Qué | Dónde |
+|---|---|
+| Versión llama.cpp / arquitectura CUDA | `build.args` en `.devcontainer/devcontainer.json` |
+| Contexto y capas GPU por modelo | `.devcontainer/models.ini` |
+| Modelos de pi | `.devcontainer/pi-models.json` → `~/.pi/agent/models.json` |
+| Modelo inicial de pi | `.devcontainer/pi-settings.json` → `~/.pi/agent/settings.json` |
+| Lista de descargas | `.devcontainer/download-models.sh` |
+
+`HF_TOKEN` del host se pasa al contenedor si existe (solo necesario para repos con acceso restringido).

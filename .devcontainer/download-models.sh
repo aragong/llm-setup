@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Descarga los GGUF a /models (volumen). Idempotente: salta los ya presentes, reanuda parciales.
+set -euo pipefail
+
+DEST=${MODELS_DIR:-/models}
+MODELS=(
+  "unsloth/gemma-4-12b-it-GGUF gemma-4-12b-it-Q4_K_M.gguf"
+  "unsloth/Qwen3.5-9B-GGUF Qwen3.5-9B-Q4_K_M.gguf"
+)
+
+auth=()
+[[ -n "${HF_TOKEN:-}" ]] && auth=(-H "Authorization: Bearer ${HF_TOKEN}")
+
+for entry in "${MODELS[@]}"; do
+  read -r repo file <<<"$entry"
+  if [[ -f "$DEST/$file" ]]; then
+    echo "ok   $file"
+    continue
+  fi
+  echo "get  $repo/$file"
+  curl -fL --retry 3 -C - "${auth[@]}" -o "$DEST/$file.part" \
+    "https://huggingface.co/$repo/resolve/main/$file"
+  mv "$DEST/$file.part" "$DEST/$file"
+done

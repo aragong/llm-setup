@@ -1,0 +1,22 @@
+{
+  "name": "llm-setup (llama.cpp + pi)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".",
+    "args": {
+      "LLAMA_CPP_TAG": "b12167",
+      "CUDA_ARCH": "120"
+    }
+  },
+  "runArgs": ["--gpus=all"],
+  "mounts": ["source=llm-models,target=/models,type=volume"],
+  "containerUser": "oceanos",
+  "remoteUser": "oceanos",
+  "containerEnv": {
+    "HF_TOKEN": "${localEnv:HF_TOKEN}"
+  },
+  "overrideCommand": false,
+  "init": true,
+  "postCreateCommand": "download-models.sh",
+  "forwardPorts": [9931]
+}
