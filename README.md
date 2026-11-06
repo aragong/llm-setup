@@ -68,6 +68,20 @@ chmod +x .devcontainer/start-from-terminal.sh
 ./devcontainer/start-from-terminal.sh
 ```
 
+**⚠️ IMPORTANTE:** La carpeta de configuración es `.devcontainer` (con el punto). El script la busca correctamente desde la raíz del proyecto.
+
+### 2️⃣ Acceder a pi
+
+```bash
+docker exec -it llm-setup-dev pi
+```
+
+O primero entrar al bash y luego ejecutar:
+```bash
+docker exec -it llm-setup-dev bash
+pi
+```
+
 Esto hará:
 - ✅ Verificar Docker y GPU
 - ✅ Crear el volumen para modelos (si no existe)
@@ -98,10 +112,11 @@ docker exec llm-setup-dev pi # Acceder a pi
 ### 4️⃣ Detener cuando termines
 
 ```bash
-cd /ruta/al/repo
 chmod +x .devcontainer/stop-container.sh
 ./devcontainer/stop-container.sh
 ```
+
+**Nota:** Puedes ejecutarlo desde cualquier lugar si usas rutas absolutas, o desde la raíz del proyecto.
 
 ### 5️⃣ Accesos directos Docker
 
@@ -118,7 +133,7 @@ chmod +x .devcontainer/stop-container.sh
 
 | Qué | Dónde |
 |---|---|
-| Versión llama.cpp / arquitectura CUDA | `build.args` en `.devcontainer/devcontainer.json` |
+| Versión llama.cpp / arquitectura CUDA | `.devcontainer/devcontainer.json` |
 | Contexto y capas GPU por modelo | `.devcontainer/models.ini` |
 | Modelos de pi | `.devcontainer/pi-models.json` → `~/.pi/agent/models.json` |
 | Modelo inicial de pi | `.devcontainer/pi-settings.json` → `~/.pi/agent/settings.json` |
@@ -129,6 +144,24 @@ chmod +x .devcontainer/stop-container.sh
 ---
 
 ## 📊 Recursos aproximados
+
+| Recurso | Uso típico |
+|---------|------------|
+| RAM | ~2.0 GB (solo modelo cargado) |
+| VRAM | ~6-7 GB (dependiendo del modelo) |
+| Disco | ~13 GB (modelos en volumen persistente) |
+| CPU | ~10-15% durante inferencia |
+
+*Valores aproximados para RTX 5070 Ti 16 GB*
+
+---
+
+## 📝 Notas adicionales
+
+- **Carpeta `.devcontainer`**: Es una carpeta oculta (empieza con punto). Los scripts la buscan automáticamente desde la raíz del proyecto.
+- **Persistencia**: Los modelos se guardan en un volumen Docker (`llm-models`) para no perderlos al reiniciar.
+- **Primera vez**: La construcción de llama.cpp puede tardar 10-20 minutos.
+- **Rebuild**: Después de modificar `.devcontainer/`, usa `docker build` o `F1 → Dev Containers: Rebuild Container` en VS Code.
 
 | Recurso | Uso típico |
 |---------|------------|

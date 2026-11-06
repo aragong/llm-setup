@@ -1,13 +1,18 @@
 #!/bin/bash
 # Script para arrancar el devcontainer desde terminal (sin VS Code)
 
-set -e
+# Determinar ruta absoluta del script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 CONTAINER_NAME="llm-setup-dev"
 VOLUME_NAME="llm-models"
+IMAGE_NAME="llm-setup-dev"
 
 echo "🐳 LLM-Setup DevContainer"
 echo "========================"
+echo "📍 Script location: $SCRIPT_DIR"
+echo "📍 Project root: $PROJECT_ROOT"
 echo ""
 
 # Verificar si Docker está disponible
@@ -16,20 +21,33 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
+# Verificar Dockerfile existe
+DOCKERFILE_PATH="$PROJECT_ROOT/Dockerfile"
+if [ ! -f "$DOCKERFILE_PATH" ]; then
+    echo "❌ Error: No se encontró Dockerfile en: $DOCKERFILE_PATH"
+    echo "   Asegúrate de estar en el directorio raíz del proyecto"
+    exit 1
+fi
+
 # Verificar si el volumen existe
 if docker volume ls | grep -q "$VOLUME_NAME"; then
     echo "✅ Volumen '$VOLUME_NAME' ya existe (~13 GB de modelos)"
 else
     echo "⚠️  Creando volumen para modelos..."
-    docker volume create $VOLUME_NAME
+    docker volume create $VOLUME_NAME || {
+        echo "❌ Error creando el volumen"
+        exit 1
+    }
 fi
 
 # Construir la imagen si no existe
-IMAGE_NAME="llm-setup-dev"
 echo "🔨 Verificando imagen Docker..."
 if ! docker images | grep -q "$IMAGE_NAME"; then
-    echo "📦 Construyendo imagen Docker..."
-    docker build -t "$IMAGE_NAME" .
+    echo "📦 Construyendo imagen Docker desde '$DOCKERFILE_PATH'..."
+    if ! docker build -t "$IMAGE_NAME" -f "$DOCKERFILE_PATH" "$PROJECT_ROOT"; then
+        echo "❌ Error construyendo la imagen Docker"
+        exit 1
+    fi
     echo "✅ Imagen construida"
 else
     echo "✅ Imagen ya existe"
@@ -38,7 +56,11 @@ fi
 # Verificar si el contenedor está corriendo
 if docker ps --format '{{.Names}}' | grep -q "^$CONTAINER_NAME$"; then
     echo "✅ Contenedor ya está corriendo"
-    docker logs -f "$CONTAINER_NAME"
+    echo ""
+    echo "📊 Estado:"
+    docker stats --no-stream "$CONTAINER_NAME" --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+    echo ""
+    echo "📋 Ver logs: docker logs -f $CONTAINER_NAME"
     exit 0
 fi
 
@@ -51,15 +73,22 @@ fi
 # Arrancar el contenedor
 echo ""
 echo "🚀 Arrancando contenedor..."
-docker run -d \
+echo "   Nombre: $CONTAINER_NAME"
+echo "   Puerto: 9931 (llama-server)"
+echo ""
+
+if ! docker run -d \
     --name "$CONTAINER_NAME" \
     --gpus all \
     -v "$VOLUME_NAME":/models \
     -p 9931:9931 \
     -e HF_TOKEN="${HF_TOKEN:-}" \
-    "$IMAGE_NAME"
+    "$IMAGE_NAME"; then
+    
+    echo "❌ Error arrancando el contenedor"
+    exit 1
+fi
 
-echo ""
 echo "✅ Contenedor arrancado!"
 echo ""
 echo "📊 Estado del contenedor:"
@@ -71,6 +100,7 @@ echo "   - Ver logs: docker logs -f $CONTAINER_NAME"
 echo "   - Detener: docker stop $CONTAINER_NAME"
 echo "   - Reiniciar: docker restart $CONTAINER_NAME"
 echo "   - Eliminar: docker rm $CONTAINER_NAME"
+echo "   - Acceder a bash: docker exec -it $CONTAINER_NAME bash"
 echo ""
 echo "🔗 Acceder a la API:"
 echo "   - curl localhost:9931/models"

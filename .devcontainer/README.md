@@ -1,0 +1,126 @@
+# 🐳 LLM-Setup DevContainer - Uso desde Terminal
+
+## 📁 Estructura de carpetas
+
+```
+.
+├── .devcontainer/              # Carpeta oculta (con el punto)
+│   ├── Dockerfile             # Configuración del contenedor
+│   ├── start-from-terminal.sh # Script para arrancar
+│   ├── stop-container.sh      # Script para detener
+│   ├── help.sh                # Script de ayuda
+│   └── README.md              # Este archivo
+├── Dockerfile                 # Archivo raíz (a nivel superior)
+└── ... otros archivos
+```
+
+**⚠️ IMPORTANTE:** La carpeta es `.devcontainer` (con el punto). Los scripts la buscan automáticamente desde cualquier ubicación.
+
+## 🚀 Comandos principales
+
+### 1️⃣ Arrancar el contenedor
+
+```bash
+# Desde cualquier lugar (usa rutas relativas)
+chmod +x .devcontainer/start-from-terminal.sh
+./devcontainer/start-from-terminal.sh
+```
+
+**Nota:** El script detecta automáticamente la ruta del Dockerfile subiendo un nivel desde `.devcontainer/`
+
+### 2️⃣ Acceder a pi
+
+```bash
+# Acceder directamente a pi
+docker exec -it llm-setup-dev pi
+```
+
+O primero entrar al bash y luego ejecutar:
+```bash
+docker exec -it llm-setup-dev bash
+pi
+```
+
+### 3️⃣ Detener
+
+```bash
+chmod +x .devcontainer/stop-container.sh
+./devcontainer/stop-container.sh
+```
+
+## 🐛 Solución de problemas
+
+### Error: "open Dockerfile: no such file or directory"
+
+**Causa:** El script no puede encontrar el Dockerfile en la ruta esperada.
+
+**Solución:**
+```bash
+# Verificar que Dockerfile existe en la raíz del proyecto
+ls -la /ruta/al/repo/Dockerfile
+
+# Si no lo ves, quizás estás en la carpeta .devcontainer/
+# Sal un nivel:
+cd ..
+
+# O usa la ruta absoluta:
+PROJECT_ROOT=/ruta/al/repo
+./devcontainer/start-from-terminal.sh
+```
+
+### Error: "failed to build: failed to solve"
+
+**Causa:** Docker no puede encontrar el Dockerfile o falta GPU.
+
+**Solución:**
+```bash
+# Verificar Dockerfile existe
+ls -la /ruta/al/repo/Dockerfile
+
+# Verificar GPU está disponible
+docker --version
+nvidia-smi
+```
+
+### Error: "Docker no está instalado"
+
+**Solución:**
+```bash
+# Instalar Docker
+sudo apt update
+sudo apt install docker.io docker-compose
+
+# Iniciar servicio
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Añadir usuario a grupo docker (para evitar sudo)
+sudo usermod -aG docker $USER
+```
+
+## 📊 Recursos en uso
+
+| Recurso | Uso típico |
+|---------|------------|
+| RAM | ~2.0 GB (modelo cargado) |
+| VRAM | ~6-7 GB (dependiendo del modelo) |
+| Disco | ~13 GB (modelos) |
+| CPU | ~10-15% durante inferencia |
+
+## 🔗 API accesible
+
+Una vez arrancado, el servidor llama está en:
+- **Endpoint:** `http://localhost:9931`
+- **Modelos:** `curl localhost:9931/models`
+- **Chat:** `curl localhost:9931/v1/chat/completions`
+
+---
+
+## 🆘 ¿Necesitas ayuda?
+
+Ejecuta:
+```bash
+./devcontainer/help.sh
+```
+
+**Para más información, ver [`../README.md`](../README.md)**
